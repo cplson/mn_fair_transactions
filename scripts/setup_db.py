@@ -1,6 +1,10 @@
 import sqlite3
+import os
 
-conn = sqlite3.connect("../data/fair.db")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_NAME = os.path.join(BASE_DIR, "data", "fair.db")
+
+conn = sqlite3.connect(DB_NAME)
 cursor = conn.cursor()
 
 # Vendors

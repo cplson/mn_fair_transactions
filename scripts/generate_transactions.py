@@ -1,9 +1,11 @@
 import sqlite3
 import random
 import time
+import os
 from datetime import datetime
 
-DB_NAME = "../data/fair.db"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_NAME = os.path.join(BASE_DIR, "data", "fair.db")
 
 def get_products(cursor):
     cursor.execute("SELECT product_id, price FROM products")
