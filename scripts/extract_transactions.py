@@ -37,19 +37,16 @@ def extract_new_transactions():
         conn.close()
         return
 
-    # Write to CSV (append mode)
     file_exists = os.path.isfile(OUTPUT_FILE)
 
     with open(OUTPUT_FILE, "a", newline="") as f:
         writer = csv.writer(f)
 
-        # Write header only once
         if not file_exists:
             writer.writerow(["transaction_id", "timestamp", "vendor_id", "product_id", "quantity", "amount"])
 
         writer.writerows(rows)
 
-    # Update last processed ID
     last_id = rows[-1][0]
     update_last_extracted_id(last_id)
 
