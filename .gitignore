@@ -1,0 +1,11 @@
+# logs
+*.log
+logs/
+
+# python cache
+__pycache__/
+*.pyc
+
+# airflow
+airflow/logs/
+airflow/standalone_admin_passwords.txt
