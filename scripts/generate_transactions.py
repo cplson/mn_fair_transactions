@@ -1,12 +1,18 @@
 import sqlite3
 import random
 import time
-import os
 from datetime import datetime
+from pathlib import Path
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_NAME = os.path.join(BASE_DIR, "data", "fair.db")
+# ─────────────────────────────
+# Project paths (single source of truth)
+# ─────────────────────────────
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DB_PATH = PROJECT_ROOT / "data" / "db" / "fair.db"
 
+# ─────────────────────────────
+# DB helpers
+# ─────────────────────────────
 def get_products(cursor):
     cursor.execute("SELECT product_id, price FROM products")
     return cursor.fetchall()
@@ -15,6 +21,9 @@ def get_vendors(cursor):
     cursor.execute("SELECT vendor_id FROM vendors")
     return [row[0] for row in cursor.fetchall()]
 
+# ─────────────────────────────
+# Transaction generation
+# ─────────────────────────────
 def generate_transaction(cursor, vendors, products):
     vendor_id = random.choice(vendors)
     product_id, price = random.choice(products)
@@ -24,12 +33,21 @@ def generate_transaction(cursor, vendors, products):
     timestamp = datetime.now().isoformat()
 
     cursor.execute("""
-        INSERT INTO transactions (timestamp, vendor_id, product_id, quantity, amount)
+        INSERT INTO transactions (
+            timestamp,
+            vendor_id,
+            product_id,
+            quantity,
+            amount
+        )
         VALUES (?, ?, ?, ?, ?)
     """, (timestamp, vendor_id, product_id, quantity, amount))
 
+# ─────────────────────────────
+# Main loop
+# ─────────────────────────────
 def main():
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     vendors = get_vendors(cursor)
@@ -44,12 +62,16 @@ def main():
 
             print("Inserted transaction at", datetime.now().strftime("%H:%M:%S"))
 
-            time.sleep(3)  # adjust speed here
+            time.sleep(1)
 
     except KeyboardInterrupt:
         print("\nStopped generator.")
+
     finally:
         conn.close()
 
+# ─────────────────────────────
+# Entry point
+# ─────────────────────────────
 if __name__ == "__main__":
     main()

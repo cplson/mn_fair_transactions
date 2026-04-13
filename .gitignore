@@ -9,3 +9,5 @@ __pycache__/
 # airflow
 airflow/logs/
 airflow/standalone_admin_passwords.txt
+
+scripts/data

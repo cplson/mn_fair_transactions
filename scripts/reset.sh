@@ -2,41 +2,63 @@
 
 echo "🔄 Resetting MN Fair Pipeline..."
 
-# Ensure data directory exists
-mkdir -p data
+# ─────────────────────────────
+# Ensure we run from project root
+# ─────────────────────────────
+cd "$(dirname "$0")/.." || exit 1
 
-# Remove database
-if [ -f data/fair.db ]; then
-    rm data/fair.db
-    echo "🗑️ Removed fair.db"
+echo "📁 Working directory: $(pwd)"
+
+# ─────────────────────────────
+# Define paths
+# ─────────────────────────────
+DB_PATH="data/db/fair.db"
+STAGING_FILE="data/staging/staging_transactions.csv"
+STATE_FILE="data/state/last_extracted_id.txt"
+
+# ─────────────────────────────
+# Ensure directories exist
+# ─────────────────────────────
+mkdir -p data/db data/staging data/state
+
+# ─────────────────────────────
+# Reset database
+# ─────────────────────────────
+if [ -f "$DB_PATH" ]; then
+    rm -f "$DB_PATH"
+    echo "🗑️ Removed database"
 else
-    echo "ℹ️ fair.db not found"
+    echo "ℹ️ Database not found"
 fi
 
-# Remove staging file
-if [ -f data/staging_transactions.csv ]; then
-    rm data/staging_transactions.csv
-    echo "🗑️ Removed staging_transactions.csv"
+# ─────────────────────────────
+# Reset staging file
+# ─────────────────────────────
+if [ -f "$STAGING_FILE" ]; then
+    rm -f "$STAGING_FILE"
+    echo "🗑️ Removed staging file"
 else
-    echo "ℹ️ staging file not found"
+    echo "ℹ️ Staging file not found"
 fi
 
-# Recreate staging file
-touch data/staging_transactions.csv
+touch "$STAGING_FILE"
 
-# Remove last extracted tracker
-if [ -f data/last_extracted_id.txt ]; then
-    rm data/last_extracted_id.txt
-    echo "🗑️ Removed last_extracted_id.txt"
+# ─────────────────────────────
+# Reset state tracker
+# ─────────────────────────────
+if [ -f "$STATE_FILE" ]; then
+    rm -f "$STATE_FILE"
+    echo "🗑️ Removed state tracker"
 else
-    echo "ℹ️ last_extracted_id.txt not found"
+    echo "ℹ️ State tracker not found"
 fi
 
-# Recreate tracker file
-echo "0" > data/last_extracted_id.txt
+echo "0" > "$STATE_FILE"
 echo "🔢 Reset last_extracted_id.txt to 0"
 
-# Recreate database
+# ─────────────────────────────
+# Recreate database schema
+# ─────────────────────────────
 python3 scripts/setup_db.py
 
 echo "✅ Reset complete!"

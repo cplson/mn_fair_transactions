@@ -1,10 +1,15 @@
 import sqlite3
-import os
+from pathlib import Path
 
+# ─────────────────────────────
+# Project root + DB path
+# ─────────────────────────────
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DB_PATH = PROJECT_ROOT / "data" / "db" / "fair.db"
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_NAME = os.path.join(BASE_DIR, "data", "fair.db")
-
+# ─────────────────────────────
+# Schema creation
+# ─────────────────────────────
 def create_tables(cursor):
     cursor.executescript("""
     -- DIMENSIONS
@@ -43,6 +48,9 @@ def create_tables(cursor):
     );
     """)
 
+# ─────────────────────────────
+# Dimension load
+# ─────────────────────────────
 def load_dimensions(cursor):
     print("Loading dimension tables...")
 
@@ -70,6 +78,9 @@ def load_dimensions(cursor):
         WHERE dt.timestamp IS NULL;
     """)
 
+# ─────────────────────────────
+# Fact load
+# ─────────────────────────────
 def load_fact_table(cursor):
     print("Loading fact table...")
 
@@ -97,8 +108,11 @@ def load_fact_table(cursor):
         WHERE fs.transaction_id IS NULL;
     """)
 
+# ─────────────────────────────
+# Main
+# ─────────────────────────────
 def main():
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     print("Starting OLAP load...")
@@ -112,5 +126,8 @@ def main():
 
     print("Load complete!")
 
+# ─────────────────────────────
+# Entry point
+# ─────────────────────────────
 if __name__ == "__main__":
     main()

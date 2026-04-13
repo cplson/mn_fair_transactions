@@ -1,24 +1,38 @@
 import sqlite3
 import csv
-import os
+from pathlib import Path
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_NAME = os.path.join(BASE_DIR, "data", "fair.db")
-TRACK_FILE = "data/last_extracted_id.txt"
-OUTPUT_FILE = "data/staging_transactions.csv"
+# ─────────────────────────────
+# Project paths (single source of truth)
+# ─────────────────────────────
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
+DATA_DIR = PROJECT_ROOT / "data"
+DB_PATH = DATA_DIR / "db" / "fair.db"
+
+STATE_FILE = DATA_DIR / "state" / "last_extracted_id.txt"
+OUTPUT_FILE = DATA_DIR / "staging" / "staging_transactions.csv"
+
+# Ensure required directories exist
+STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+# ─────────────────────────────
+# State helpers
+# ─────────────────────────────
 def get_last_extracted_id():
-    if not os.path.exists(TRACK_FILE):
+    if not STATE_FILE.exists():
         return 0
-    with open(TRACK_FILE, "r") as f:
-        return int(f.read().strip())
+    return int(STATE_FILE.read_text().strip() or 0)
 
 def update_last_extracted_id(last_id):
-    with open(TRACK_FILE, "w") as f:
-        f.write(str(last_id))
+    STATE_FILE.write_text(str(last_id))
 
+# ─────────────────────────────
+# Extraction logic
+# ─────────────────────────────
 def extract_new_transactions():
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     last_id = get_last_extracted_id()
@@ -37,13 +51,20 @@ def extract_new_transactions():
         conn.close()
         return
 
-    file_exists = os.path.isfile(OUTPUT_FILE)
+    file_exists = OUTPUT_FILE.exists()
 
-    with open(OUTPUT_FILE, "a", newline="") as f:
+    with OUTPUT_FILE.open("a", newline="") as f:
         writer = csv.writer(f)
 
         if not file_exists:
-            writer.writerow(["transaction_id", "timestamp", "vendor_id", "product_id", "quantity", "amount"])
+            writer.writerow([
+                "transaction_id",
+                "timestamp",
+                "vendor_id",
+                "product_id",
+                "quantity",
+                "amount"
+            ])
 
         writer.writerows(rows)
 
@@ -54,5 +75,8 @@ def extract_new_transactions():
 
     conn.close()
 
+# ─────────────────────────────
+# Entry point
+# ─────────────────────────────
 if __name__ == "__main__":
     extract_new_transactions()

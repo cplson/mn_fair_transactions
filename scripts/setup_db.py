@@ -1,13 +1,26 @@
+from pathlib import Path
 import sqlite3
-import os
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_NAME = os.path.join(BASE_DIR, "data", "fair.db")
+# ─────────────────────────────
+# Project root resolution
+# ─────────────────────────────
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DATA_DIR = PROJECT_ROOT / "data"
+DB_PATH = DATA_DIR / "db" / "fair.db"
 
-conn = sqlite3.connect(DB_NAME)
+# Ensure db folder exists
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+# ─────────────────────────────
+# Database connection
+# ─────────────────────────────
+conn = sqlite3.connect(DB_PATH)
 cursor = conn.cursor()
 
-# Vendors
+# ─────────────────────────────
+# Tables
+# ─────────────────────────────
+
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS vendors (
     vendor_id INTEGER PRIMARY KEY,
@@ -15,7 +28,6 @@ CREATE TABLE IF NOT EXISTS vendors (
 )
 """)
 
-# Products
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS products (
     product_id INTEGER PRIMARY KEY,
@@ -24,7 +36,6 @@ CREATE TABLE IF NOT EXISTS products (
 )
 """)
 
-# Transactions
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS transactions (
     transaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,7 +49,10 @@ CREATE TABLE IF NOT EXISTS transactions (
 )
 """)
 
-# Seed vendors
+# ─────────────────────────────
+# Seed data
+# ─────────────────────────────
+
 vendors = [
     (1, "Corn Dog Stand"),
     (2, "Sweet Martha's Cookies"),
@@ -47,9 +61,11 @@ vendors = [
     (5, "Mini Donuts")
 ]
 
-cursor.executemany("INSERT OR IGNORE INTO vendors VALUES (?, ?)", vendors)
+cursor.executemany(
+    "INSERT OR IGNORE INTO vendors VALUES (?, ?)",
+    vendors
+)
 
-# Seed products
 products = [
     (1, "Corn Dog", 5.0),
     (2, "Cookies Bucket", 8.0),
@@ -58,7 +74,10 @@ products = [
     (5, "Mini Donuts", 7.0)
 ]
 
-cursor.executemany("INSERT OR IGNORE INTO products VALUES (?, ?, ?)", products)
+cursor.executemany(
+    "INSERT OR IGNORE INTO products VALUES (?, ?, ?)",
+    products
+)
 
 conn.commit()
 conn.close()
