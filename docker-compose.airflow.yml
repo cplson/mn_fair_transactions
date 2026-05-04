@@ -6,7 +6,14 @@
 #   docker compose -f docker-compose.airflow.yml up
 #
 # DAGs: ./airflow/dags  ->  /opt/airflow/dags
-# Scripts/data for BashOperator or PythonOperator: mounted read-only under /opt/airflow/mn_fair
+#
+# Project mount for pipeline scripts + data (PythonOperator / BashOperator):
+#   ./scripts  ->  /opt/airflow/mn_fair/scripts  (read-only)
+#   ./data     ->  /opt/airflow/mn_fair/data     (read-write: fair.db, staging, state)
+# Scripts use Path(__file__).parents[1] as project root, so they resolve data under mn_fair/.
+#
+# If tasks fail to write to ./data on the host, set AIRFLOW_UID to your host user id, e.g.:
+#   AIRFLOW_UID=$(id -u) docker compose -f docker-compose.airflow.yml up
 services:
   airflow:
     image: apache/airflow:3.2.0-python3.12

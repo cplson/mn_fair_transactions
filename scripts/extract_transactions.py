@@ -1,6 +1,9 @@
-import sqlite3
 import csv
+import logging
+import sqlite3
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 # ─────────────────────────────
 # Project paths (single source of truth)
@@ -47,7 +50,10 @@ def extract_new_transactions():
     rows = cursor.fetchall()
 
     if not rows:
-        print("No new transactions.")
+        logger.info(
+            "Extracted 0 new transactions (watermark transaction_id=%s, no rows above it).",
+            last_id,
+        )
         conn.close()
         return
 
@@ -68,10 +74,16 @@ def extract_new_transactions():
 
         writer.writerows(rows)
 
-    last_id = rows[-1][0]
-    update_last_extracted_id(last_id)
+    new_high = rows[-1][0]
+    update_last_extracted_id(new_high)
 
-    print(f"Extracted {len(rows)} new transactions. Last ID: {last_id}")
+    logger.info(
+        "Extracted %s new transaction(s); watermark advanced from transaction_id=%s to %s; appended to %s",
+        len(rows),
+        last_id,
+        new_high,
+        OUTPUT_FILE,
+    )
 
     conn.close()
 
