@@ -1,5 +1,11 @@
 # Reproducible runs for ETL scripts (Ubuntu image in Dockerfile).
 # Mount ./data so fair.db and staging CSV stay on the host.
+#
+# Services:
+#   pipeline   - one-shot ETL scripts (run with `docker compose run --rm pipeline ...`)
+#   dashboard  - Streamlit UI on http://localhost:8501, read-only view of fair.db
+#
+# Both services share the same image so deps and code stay in sync.
 services:
   pipeline:
     build: .
@@ -7,3 +13,23 @@ services:
     working_dir: /app
     volumes:
       - ./data:/app/data
+
+  dashboard:
+    build: .
+    image: mn-fair-pipeline:local
+    working_dir: /app
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data:ro
+      # Bind-mount so /app/dashboard always matches the repo (avoids stale
+      # images missing COPY dashboard, and picks up local edits without rebuild).
+      - ./dashboard:/app/dashboard:ro
+    command:
+      - streamlit
+      - run
+      - /app/dashboard/app.py
+      - --server.address=0.0.0.0
+      - --server.port=8501
+      - --server.headless=true
+      - --browser.gatherUsageStats=false

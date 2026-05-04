@@ -1,2 +1,6 @@
 # Pipeline scripts use the Python 3.12 standard library only (sqlite3, csv, pathlib).
 # Airflow runs in its own container (docker-compose.airflow.yml), not via this file.
+#
+# Dashboard layer (Streamlit) is the only third-party surface in this image.
+streamlit==1.39.0
+pandas==2.2.3
