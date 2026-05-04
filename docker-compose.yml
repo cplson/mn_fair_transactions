@@ -1,0 +1,9 @@
+# Reproducible runs for ETL scripts (Ubuntu image in Dockerfile).
+# Mount ./data so fair.db and staging CSV stay on the host.
+services:
+  pipeline:
+    build: .
+    image: mn-fair-pipeline:local
+    working_dir: /app
+    volumes:
+      - ./data:/app/data

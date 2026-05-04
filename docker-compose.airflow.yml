@@ -1,0 +1,24 @@
+# Optional: official Airflow image + "airflow standalone" (SQLite, LocalExecutor).
+# Avoids host Python/Airflow version drift. UI: http://localhost:8080
+# First run prints admin password to container logs.
+#
+# Usage from repo root:
+#   docker compose -f docker-compose.airflow.yml up
+#
+# DAGs: ./airflow/dags  ->  /opt/airflow/dags
+# Scripts/data for BashOperator or PythonOperator: mounted read-only under /opt/airflow/mn_fair
+services:
+  airflow:
+    image: apache/airflow:3.2.0-python3.12
+    user: "${AIRFLOW_UID:-50000}:0"
+    ports:
+      - "8080:8080"
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/dags
+    volumes:
+      - ./airflow/.docker-home:/opt/airflow
+      - ./airflow/dags:/opt/airflow/dags
+      - ./scripts:/opt/airflow/mn_fair/scripts:ro
+      - ./data:/opt/airflow/mn_fair/data
+    command: standalone

@@ -1,0 +1,2 @@
+# Pipeline scripts use the Python 3.12 standard library only (sqlite3, csv, pathlib).
+# Airflow runs in its own container (docker-compose.airflow.yml), not via this file.
