@@ -1,8 +1,7 @@
-"""MN Fair Sales Dashboard (Checkpoint 1: connectivity smoke test).
+"""MN Fair Sales Dashboard (Streamlit).
 
-This stub proves the container boots, port 8501 is reachable, and the
-read-only SQLite mount works. KPIs, charts, filters, and refresh polish
-land in later checkpoints.
+Connectivity, KPIs, schema explorer, and charts read `fair.db` in read-only
+mode. Filters and refresh polish land in later checkpoints.
 """
 
 from __future__ import annotations
@@ -20,6 +19,8 @@ if _root not in sys.path:
 
 import sqlite3
 
+import altair as alt
+import pandas as pd
 import streamlit as st
 
 from dashboard.db import DB_PATH, run_query
@@ -48,7 +49,7 @@ st.markdown(
     """
 )
 
-st.subheader("Checkpoint 2: KPIs + star schema explorer")
+st.subheader("Checkpoint 3: KPIs, explorer, and charts")
 
 st.write(f"Database: `{DB_PATH}`")
 
@@ -61,6 +62,10 @@ try:
     active_vendors = int(run_query(queries.KPI_ACTIVE_VENDORS).iloc[0]["active_vendors"])
     row_counts_df = run_query(queries.ROW_COUNTS)
     joined_sample_df = run_query(queries.STAR_SCHEMA_SAMPLE)
+    revenue_time_df = run_query(queries.CHART_REVENUE_OVER_TIME)
+    top_vendors_df = run_query(queries.CHART_TOP_VENDORS)
+    top_products_df = run_query(queries.CHART_TOP_PRODUCTS)
+    vendor_product_df = run_query(queries.CHART_VENDOR_PRODUCT_REVENUE)
 except sqlite3.OperationalError as exc:
     if "no such table" in str(exc).lower():
         st.warning(
@@ -89,3 +94,81 @@ else:
 
     st.caption("Recent joined sample (`fact_sales` + `dim_time` + `dim_vendor` + `dim_product`).")
     st.dataframe(joined_sample_df, use_container_width=True, hide_index=True)
+
+    st.divider()
+    st.subheader("Charts (full star schema, no filters yet)")
+
+    # --- Revenue over time ---
+    st.markdown("**Revenue by hour** (`fact_sales` → `dim_time`)")
+    with st.expander("Show SQL"):
+        st.code(queries.CHART_REVENUE_OVER_TIME.strip(), language="sql")
+    if revenue_time_df.empty:
+        st.info("No rows in `fact_sales` yet — nothing to plot.")
+    else:
+        line_df = revenue_time_df.copy()
+        line_df["period"] = pd.to_datetime(
+            line_df["period"], format="%Y-%m-%d %H:%M", errors="coerce"
+        )
+        line_df = line_df.dropna(subset=["period"]).set_index("period")[["revenue"]]
+        if line_df.empty:
+            st.warning("Could not parse time buckets for the line chart; check `dim_time` data.")
+        else:
+            st.line_chart(line_df)
+
+    # --- Top vendors ---
+    st.markdown("**Top vendors by revenue** (`fact_sales` → `dim_vendor`)")
+    with st.expander("Show SQL"):
+        st.code(queries.CHART_TOP_VENDORS.strip(), language="sql")
+    if top_vendors_df.empty:
+        st.info("No rows in `fact_sales` yet — nothing to plot.")
+    else:
+        vendor_chart = (
+            alt.Chart(top_vendors_df)
+            .mark_bar()
+            .encode(
+                x=alt.X("revenue:Q", title="Revenue ($)"),
+                y=alt.Y("vendor_name:N", sort="-x", title="Vendor"),
+                tooltip=["vendor_name", "revenue"],
+            )
+            .properties(height=220)
+        )
+        st.altair_chart(vendor_chart, use_container_width=True)
+
+    # --- Top products ---
+    st.markdown("**Top products by revenue** (`fact_sales` → `dim_product`)")
+    with st.expander("Show SQL"):
+        st.code(queries.CHART_TOP_PRODUCTS.strip(), language="sql")
+    if top_products_df.empty:
+        st.info("No rows in `fact_sales` yet — nothing to plot.")
+    else:
+        product_chart = (
+            alt.Chart(top_products_df)
+            .mark_bar()
+            .encode(
+                x=alt.X("revenue:Q", title="Revenue ($)"),
+                y=alt.Y("product_name:N", sort="-x", title="Product"),
+                tooltip=["product_name", "revenue"],
+            )
+            .properties(height=220)
+        )
+        st.altair_chart(product_chart, use_container_width=True)
+
+    # --- Vendor × product heatmap ---
+    st.markdown("**Vendor × product revenue** (all three dimensions)")
+    with st.expander("Show SQL"):
+        st.code(queries.CHART_VENDOR_PRODUCT_REVENUE.strip(), language="sql")
+    if vendor_product_df.empty:
+        st.info("No rows in `fact_sales` yet — nothing to plot.")
+    else:
+        heat = (
+            alt.Chart(vendor_product_df)
+            .mark_rect()
+            .encode(
+                x=alt.X("product_name:N", title="Product", sort=None),
+                y=alt.Y("vendor_name:N", title="Vendor", sort=None),
+                color=alt.Color("revenue:Q", title="Revenue ($)"),
+                tooltip=["vendor_name", "product_name", "revenue"],
+            )
+            .properties(height=260)
+        )
+        st.altair_chart(heat, use_container_width=True)
