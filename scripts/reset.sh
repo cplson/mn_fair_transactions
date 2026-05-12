@@ -24,9 +24,9 @@ mkdir -p data/db data/staging data/state
 # ─────────────────────────────
 # Reset database
 # ─────────────────────────────
-if [ -f "$DB_PATH" ]; then
-    rm -f "$DB_PATH"
-    echo "🗑️ Removed database"
+if [ -f "$DB_PATH" ] || [ -f "${DB_PATH}-wal" ] || [ -f "${DB_PATH}-shm" ]; then
+    rm -f "$DB_PATH" "${DB_PATH}-wal" "${DB_PATH}-shm"
+    echo "🗑️ Removed database (and any SQLite -wal / -shm sidecars)"
 else
     echo "ℹ️ Database not found"
 fi
